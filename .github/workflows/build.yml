@@ -1,1 +1,27 @@
-
+name: Build APK
+on:
+  workflow_dispatch:
+  push:
+    paths: ['walkie.zip']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - run: unzip -q walkie.zip -d proj
+      - run: gradle assembleDebug --no-daemon
+        working-directory: proj
+      - run: |
+          cp proj/app/build/outputs/apk/debug/app-debug.apk Walkie.apk
+          gh release create "v${{ github.run_number }}" Walkie.apk --title "Walkie v${{ github.run_number }}" --notes "Debug build"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
